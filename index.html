@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>校园跑配速规划台</title>
+<style>
+  :root{--bg:#0a0d11;--panel:#11161d;--panel2:#0c1116;--line:#1e2731;--txt:#e3ebf3;--dim:#7d8b99;--acc:#22d3a6;--amber:#f0a020;--red:#f4666a;}
+  *{box-sizing:border-box}html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--txt);font:13px/1.55 "Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;overflow:hidden}
+  .app{height:100vh;display:flex;flex-direction:column}
+  .bar{display:flex;align-items:center;gap:14px;padding:9px 14px;border-bottom:1px solid var(--line);background:#0d1219}
+  .logo{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .logo small{color:var(--dim);font-weight:400;font-size:10.5px}
+  .led{width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 9px var(--acc)}
+  .pills{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap}
+  .pill{font-size:11px;padding:3px 9px;border:1px solid var(--line);border-radius:20px;color:var(--dim);background:var(--panel2);white-space:nowrap}
+  .pill.on{color:var(--acc);border-color:#17564a;background:#0c2a24}
+  .cols{flex:1;display:grid;grid-template-columns:318px minmax(340px,1fr) 392px;gap:10px;padding:10px;overflow:hidden}
+  .col{display:flex;flex-direction:column;gap:10px;overflow-y:auto;min-height:0}
+  .col::-webkit-scrollbar{width:7px}.col::-webkit-scrollbar-thumb{background:#1c2531;border-radius:4px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:11px 12px;flex:none}
+  .card.grow{flex:1;display:flex;flex-direction:column;min-height:0}
+  .card h3{margin:0 0 9px;font-size:11.5px;font-weight:600;color:var(--acc);letter-spacing:.8px;display:flex;align-items:center;gap:7px}
+  .card h3 .hint{margin-left:auto;font-weight:400;color:var(--dim);font-size:10.5px}
+  .row{display:flex;align-items:center;gap:7px;margin:6px 0}
+  .row label{flex:0 0 62px;color:var(--dim);font-size:11.5px}
+  .row .val{margin-left:auto;font-variant-numeric:tabular-nums;font-size:11.5px;white-space:nowrap}
+  input[type=range]{-webkit-appearance:none;height:4px;border-radius:3px;background:#202c39;flex:1;outline:none;min-width:0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--acc);box-shadow:0 0 0 3px rgba(34,211,166,.16);cursor:pointer}
+  input[type=number],input[type=text],input[type=password],select,textarea{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:5px 7px;font:inherit;font-size:11.5px;width:100%;outline:none;min-width:0}
+  input:focus,select:focus,textarea:focus{border-color:#2b6a5e}
+  button{background:#182131;border:1px solid var(--line);color:var(--txt);border-radius:6px;padding:5px 9px;font:inherit;font-size:11.5px;cursor:pointer;transition:.14s}
+  button:hover{border-color:#33556b;background:#1d2836}button:disabled{opacity:.4;cursor:not-allowed}
+  button.mini{padding:3px 7px;font-size:10.5px}
+  button.go{background:linear-gradient(180deg,#1fbf9f,#13917c);border-color:#1fbf9f;color:#03211c;font-weight:700;padding:8px 12px;font-size:12.5px}
+  .btns{display:flex;gap:5px;flex-wrap:wrap}.btns button{flex:1 1 auto}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+  .note{color:var(--dim);font-size:10.5px;line-height:1.55;margin:7px 0 0}
+  .note b{color:var(--amber);font-weight:600}
+  canvas.cv{flex:1;width:100%;min-height:270px;border-radius:7px;border:1px solid var(--line);background:#0a0f14;cursor:crosshair;display:block}
+  canvas.chart{width:100%;height:84px;display:block;border-radius:6px;background:var(--panel2);border:1px solid var(--line)}
+  .stat{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .stat div{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:5px 7px}
+  .stat b{display:block;font-size:13.5px;font-variant-numeric:tabular-nums}
+  .stat span{color:var(--dim);font-size:10px}
+  table.splits{width:100%;border-collapse:collapse;font-size:11.5px;font-variant-numeric:tabular-nums}
+  table.splits th{text-align:left;color:var(--dim);font-weight:500;font-size:10.5px;padding:3px 4px;border-bottom:1px solid var(--line)}
+  table.splits td{padding:3px 4px;border-bottom:1px dashed #161e27}
+  table.splits tr.fast td{color:var(--acc)}table.splits tr.slow td{color:var(--amber)}
+  .checks{display:flex;flex-direction:column;gap:4px}
+  .ck{display:flex;gap:6px;align-items:flex-start;font-size:11px;line-height:1.35}
+  .ck i{flex:0 0 auto;width:13px;height:13px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:9px;margin-top:1px}
+  .ck.pass i{background:#0b2b21;color:var(--acc);border:1px solid #17543f}
+  .ck.fail i{background:#2b1416;color:var(--red);border:1px solid #4d2326}
+  .ck .d{color:var(--dim);display:block;font-size:10px}
+  .sw{position:relative;width:36px;height:19px;border-radius:20px;background:#212d3a;border:1px solid var(--line);cursor:pointer;transition:.18s;flex:0 0 auto}
+  .sw::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#5d6d7d;transition:.18s}
+  .sw.on{background:#0d3a30;border-color:#1f7d68}
+  .sw.on::after{left:19px;background:var(--acc)}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#18222e;border:1px solid #2c4055;color:var(--txt);padding:8px 15px;border-radius:8px;font-size:11.5px;box-shadow:0 10px 30px rgba(0,0,0,.55);z-index:99;max-width:74vw}
+  @media (max-width:1240px){body{overflow:auto}.app{height:auto}.cols{grid-template-columns:1fr;overflow:visible}.col{overflow:visible}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="text/x-template" id="app-tpl">
+<div class="app">
+  <header class="bar">
+    <div class="logo"><span class="led"></span>校园跑配速规划台<small>pacing planner</small></div>
+    <div class="pills">
+      <span class="pill on">{{ S.targetKm.toFixed(2) }} km</span>
+      <span class="pill on">{{ fmtPace(S.paceSec) }}/km</span>
+      <span class="pill">{{ fmtTime(estDuration) }}</span>
+      <span class="pill">{{ S.pts.length }} 顶点</span>
+    </div>
+  </header>
+  <main class="cols">
+    <aside class="col">
+      <section class="card">
+        <h3>目标</h3>
+        <div class="row"><label>里程</label><input type="range" min="0.4" max="21" step="0.1" v-model.number="S.targetKm"><span class="val">{{ S.targetKm.toFixed(1) }} km</span></div>
+        <div class="row"><label>配速</label><input type="range" min="180" max="900" step="5" v-model.number="S.paceSec"><span class="val">{{ fmtPace(S.paceSec) }}</span></div>
+        <div class="row"><label>单圈</label>
+          <select v-model.number="S.lapM">
+            <option :value="400">400 m 标准跑道</option>
+            <option :value="200">200 m</option>
+            <option :value="1000">1 km</option>
+            <option :value="2000">2 km</option>
+          </select>
+        </div>
+        <div class="row"><label>策略</label>
+          <select v-model="S.strategy">
+            <option value="steady">匀速到底</option>
+            <option value="negative">负分段（后快）</option>
+            <option value="positive">前快后掉</option>
+            <option value="warmup">热身足（前慢后稳）</option>
+          </select>
+        </div>
+        <p class="note">预计 <b>{{ fmtTime(estDuration) }}</b>，共 {{ lapCount }} 圈，每圈约 {{ fmtTime(estDuration / Math.max(1, lapCount)) }}。</p>
+      </section>
+      <section class="card">
+        <h3>路线</h3>
+        <div class="row"><label>中心点</label>
+          <input type="text" v-model="ui.centerText" placeholder="纬度, 经度">
+          <select v-model="ui.coordSys" style="flex:0 0 92px">
+            <option value="gcj02">GCJ-02</option><option value="bd09">BD-09</option><option value="wgs84">WGS-84</option>
+          </select>
+          <button class="mini" style="flex:0 0 auto" @click="applyCenter">定位</button>
+        </div>
+        <div class="grid3" style="margin-top:6px">
+          <button class="mini" @click="usePreset('track')">400m 跑道</button>
+          <button class="mini" @click="usePreset('round')">圆形环</button>
+          <button class="mini" @click="usePreset('square')">方形环路</button>
+          <button class="mini" @click="usePreset('fig8')">8 字</button>
+          <button class="mini" @click="usePreset('outback')">折返</button>
+          <button class="mini" @click="usePreset('random')">随机回环</button>
+        </div>
+        <div class="row"><label>里程口径</label>
+          <select v-model="S.mode">
+            <option value="loop">原地跑 N 圈（推荐）</option>
+            <option value="scale">缩放对齐目标里程</option>
+            <option value="exact">按我画的长度</option>
+          </select>
+        </div>
+        <div class="btns">
+          <button class="mini" @click="refitAndDraw">适配</button>
+          <button class="mini" @click="smoothRoute">平滑</button>
+          <button class="mini" @click="toggleClosed">{{ S.closed ? '取消闭合' : '闭合' }}</button>
+          <button class="mini" @click="undo" :disabled="!history.length">撤销</button>
+          <button class="mini" @click="clearRoute">清空</button>
+        </div>
+      </section>
+      <section class="card">
+        <h3>AI 配速建议 <span class="hint">{{ S.aiOn ? '开' : '关' }}</span></h3>
+        <div class="row" style="margin-top:0">
+          <label style="flex:1">启用 DeepSeek</label>
+          <div class="sw" :class="{on:S.aiOn}" @click="S.aiOn = !S.aiOn"></div>
+        </div>
+        <template v-if="S.aiOn">
+          <div class="row"><label>Key</label><input type="password" v-model="S.aiKey" placeholder="sk-..."></div>
+          <div class="row"><label>模型</label><select v-model="S.aiModel"><option value="deepseek-chat">deepseek-chat</option><option value="deepseek-reasoner">deepseek-reasoner</option></select></div>
+          <div class="row"><label>桥地址</label><input type="text" v-model="S.bridge"></div>
+          <p class="note">AI 只输出限幅配速曲线，时长与轨迹仍由本地模型算。需先 <code>node local-agent.js</code> 起桥（浏览器直连会被 CORS 挡）。</p>
+        </template>
+      </section>
+    </aside>
+    <section class="col">
+      <div class="card grow">
+        <h3>路线 <span class="hint">单击加点 · 拖动顶点 · 双击删点</span></h3>
+        <canvas class="cv" ref="cv" @mousedown="onDown" @mousemove="onMove" @mouseup="onUp" @mouseleave="onUp" @dblclick.prevent="onDbl" @contextmenu.prevent="onRight"></canvas>
+        <div class="btns" style="margin-top:7px">
+          <button class="mini" @click="loadDemo">载入 400m 跑道示例</button>
+          <button class="mini" @click="bake">把形状缩放到目标里程</button>
+          <button class="mini" @click="copyLink" :disabled="!shareCode">复制分享链接</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>分段时间表 <span class="hint">{{ splits.length ? splits.length + ' 段 · 按 ' + S.lapM + ' m' : '先生成计划' }}</span></h3>
+        <div class="btns" style="margin-bottom:8px">
+          <button class="go" @click="generate" :disabled="ui.busy || !plan">生成配速计划</button>
+          <button class="mini" @click="exportCard" :disabled="!splits.length">导出配速卡</button>
+        </div>
+        <div style="max-height:268px;overflow:auto">
+          <table class="splits" v-if="splits.length">
+            <thead><tr><th>段</th><th>距离</th><th>该段配速</th><th>该段用时</th><th>累计</th></tr></thead>
+            <tbody>
+              <tr v-for="s in splits" :key="s.i" :class="s.kind">
+                <td>{{ s.i }}</td><td>{{ s.dist.toFixed(0) }} m</td>
+                <td>{{ fmtPace(s.pace) }}</td><td>{{ fmtTime(s.sec) }}</td><td>{{ fmtTime(s.cum) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="note" v-else>点「生成配速计划」，按目标里程与配速算出每圈该跑多少。</p>
+        </div>
+      </div>
+    </section>
+    <aside class="col">
+      <div class="card">
+        <h3>计划摘要</h3>
+        <div class="stat" v-if="S.result">
+          <div><b>{{ fmtM(S.result.summary.distanceM) }}</b><span>里程</span></div>
+          <div><b>{{ fmtTime(S.result.summary.durationSec) }}</b><span>总时长</span></div>
+          <div><b>{{ fmtPace(S.result.summary.avgPaceSecPerKm) }}</b><span>平均配速</span></div>
+          <div><b>{{ fmtPace(S.result.summary.fastestPaceSecPerKm) }}</b><span>最快一段</span></div>
+          <div><b>{{ S.result.summary.steps }}</b><span>预计步数</span></div>
+          <div><b>{{ S.result.summary.avgCadenceSpm }}</b><span>建议步频</span></div>
+        </div>
+        <p class="note" v-else>还没有计划。</p>
+      </div>
+      <div class="card">
+        <h3>配速曲线</h3>
+        <canvas class="chart" ref="cp"></canvas>
+        <p class="note" style="margin:4px 0 0">↑ 越高越快。上坡自动降速、下坡略快。</p>
+      </div>
+      <div class="card">
+        <h3>导出</h3>
+        <div class="btns">
+          <button class="mini" @click="exportGPX" :disabled="!plan">GPX</button>
+          <button class="mini" @click="exportRoute" :disabled="!plan">路线 JSON</button>
+          <button class="mini" @click="exportCSV" :disabled="!S.result">分段 CSV</button>
+          <button class="mini" @click="copyShare" :disabled="!shareCode">分享码</button>
+        </div>
+        <p class="note">GPX 可导进手表/手机运动 App 照着跑；配速卡是纯文本，存手机随时看。</p>
+      </div>
+      <div class="card">
+        <h3>数据自洽 <span class="hint">{{ passedCount }}/{{ S.result ? S.result.checks.length : 0 }}</span></h3>
+        <div class="checks" v-if="S.result">
+          <div class="ck" v-for="c in S.result.checks" :key="c.id" :class="c.pass ? 'pass' : 'fail'">
+            <i>{{ c.pass ? '✓' : '!' }}</i><div>{{ c.label }}<span class="d">{{ c.detail }}</span></div>
+          </div>
+        </div>
+        <p class="note" v-else>生成计划后会检查配速区间、步幅、里程一致性。</p>
+      </div>
+    </aside>
+  </main>
+  <div class="toast" v-if="ui.toast">{{ ui.toast }}</div>
+</div>
+</script>
+<script src="vue.global.prod.js"></script>
+<script src="core.js"></script>
+<script>
+(function () {
+  'use strict';
+  var YPC = window.YPC, Vue = window.Vue;
+  var app = document.getElementById('app');
+  if (!Vue) { app.innerHTML = '<p style="padding:24px;color:#f4666a">缺 vue.global.prod.js：文件要放同一文件夹。</p>'; return; }
+  if (!YPC) { app.innerHTML = '<p style="padding:24px;color:#f4666a">缺 core.js：文件要放同一文件夹。</p>'; return; }
+
+  var LS = 'campus-pacing-planner/v1';
+  var DEFAULTS = {
+    centerLat: 39.204802, centerLng: 118.600939,
+    closed: true, targetKm: 2.0, mode: 'loop', lapM: 400, strategy: 'negative',
+    paceSec: 360, cadenceBase: 168, gpsNoise: 1.5, hills: 2.5, seed: 20260101,
+    aiOn: false, aiKey: '', aiModel: 'deepseek-chat', aiBase: 'https://api.deepseek.com',
+    bridge: 'http://127.0.0.1:8787'
+  };
+  var STRATEGY = {
+    steady:   { warmupSec: 60,  driftPct: 0.005, kickPct: 0.02, label: '匀速到底' },
+    negative: { warmupSec: 120, driftPct: -0.03, kickPct: 0.06, label: '负分段（后快）' },
+    positive: { warmupSec: 60,  driftPct: 0.06,  kickPct: 0.01, label: '前快后掉' },
+    warmup:   { warmupSec: 220, driftPct: 0.015, kickPct: 0.03, label: '热身足' }
+  };
+
+  Vue.createApp({
+    template: '#app-tpl',
+    setup: function () {
+      var S = Vue.reactive(Object.assign({}, DEFAULTS, { pts: [], result: null }, loadSettings()));
+      var ui = Vue.reactive({ toast: '', busy: false, centerText: '', coordSys: 'gcj02' });
+      var history = Vue.ref([]), shareCode = Vue.ref('');
+      var cv = Vue.ref(null), cp = Vue.ref(null);
+      var view = { s: 1, cx: 0, cy: 0, w: 600, h: 380 };
+      var drag = -1, rafId = 0;
+
+      function loadSettings() {
+        try {
+          var raw = localStorage.getItem(LS);
+          if (!raw) return {};
+          var o = JSON.parse(raw), out = {};
+          Object.keys(DEFAULTS).forEach(function (k) { if (o[k] !== undefined) out[k] = o[k]; });
+          if (Array.isArray(o.pts)) out.pts = o.pts.filter(function (p) { return isFinite(p.x) && isFinite(p.y); });
+          return out;
+        } catch (e) { return {}; }
+      }
+      function saveSettings() {
+        try {
+          var o = { pts: S.pts };
+          Object.keys(DEFAULTS).forEach(function (k) { o[k] = S[k]; });
+          localStorage.setItem(LS, JSON.stringify(o));
+        } catch (e) { }
+      }
+      Vue.watch(S, saveSettings, { deep: true });
+
+      function toast(msg, ms) {
+        ui.toast = msg;
+        clearTimeout(toast._t);
+        toast._t = setTimeout(function () { ui.toast = ''; }, ms || 2600);
+      }
+      function fmtM(v) { if (!isFinite(v)) return '—'; return v < 1000 ? v.toFixed(0) + ' m' : (v / 1000).toFixed(2) + ' km'; }
+      function fmtTime(sec) {
+        if (!isFinite(sec) || sec <= 0) return '—';
+        sec = Math.round(sec);
+        var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+        return (h ? h + ':' : '') + (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+      }
+      function fmtPace(s) { return YPC.fmtPace(s); }
+
+      var geo = Vue.computed(function () {
+        var g = S.pts.map(function (p) { return YPC.offset(S.centerLat, S.centerLng, p.x, p.y); });
+        if (S.closed && g.length > 2) g.push({ lat: g[0].lat, lng: g[0].lng });
+        return g;
+      });
+      var drawnLen = Vue.computed(function () { return geo.value.length > 1 ? YPC.polylineLength(geo.value, false) : 0; });
+      var plan = Vue.computed(function () {
+        var g = geo.value;
+        if (g.length < 2) return null;
+        if (S.mode === 'exact') return { points: g, dist: YPC.polylineLength(g, false) };
+        var fitted = YPC.fitDistance(g, S.targetKm * 1000, S.mode === 'loop' ? 'loop' : 'scale');
+        return { points: fitted, dist: YPC.polylineLength(fitted, false) };
+      });
+      var estDuration = Vue.computed(function () { return plan.value ? (plan.value.dist / 1000) * S.paceSec : 0; });
+      var lapCount = Vue.computed(function () {
+        if (!plan.value || !S.lapM) return 0;
+        return Math.max(1, Math.round(plan.value.dist / S.lapM));
+      });
+      var passedCount = Vue.computed(function () {
+        return S.result ? S.result.checks.filter(function (c) { return c.pass; }).length : 0;
+      });
+
+      var splits = Vue.computed(function () {
+        var r = S.result;
+        if (!r || !r.points.length || !S.lapM) return [];
+        var D = r.summary.distanceM;
+        var laps = Math.max(1, Math.round(D / S.lapM));
+        var lapLen = D / laps;
+        var buckets = [];
+        for (var k = 0; k < laps; k++) buckets.push({ dist: 0, sec: 0 });
+        for (var p = 1; p < r.points.length; p++) {
+          var a = r.points[p - 1], b = r.points[p];
+          var mid = (a.cumM + b.cumM) / 2;
+          var idx = Math.min(laps - 1, Math.floor(mid / lapLen));
+          buckets[idx].sec += (b.tSec - a.tSec);
+          buckets[idx].dist += (b.cumM - a.cumM);
+        }
+        var cum = 0, out = [], avg = r.summary.avgPaceSecPerKm;
+        for (var i = 0; i < buckets.length; i++) {
+          var bk = buckets[i];
+          cum += bk.sec;
+          var pace = bk.dist > 0 ? (bk.sec / bk.dist) * 1000 : 0;
+          out.push({
+            i: i + 1, dist: bk.dist, sec: bk.sec, pace: pace, cum: cum,
+            kind: pace < avg - 3 ? 'fast' : (pace > avg + 3 ? 'slow' : '')
+          });
+        }
+        return out;
+      });
+
+      function refit() {
+        var el = cv.value;
+        if (!el) return;
+        var w = el.clientWidth || 600, h = el.clientHeight || 380;
+        view.w = w; view.h = h;
+        if (!S.pts.length) { view.s = 1; view.cx = 0; view.cy = 0; return; }
+        var minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+        S.pts.forEach(function (p) {
+          if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+          if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
+        });
+        var pad = 32;
+        var dx = Math.max(30, maxX - minX), dy = Math.max(30, maxY - minY);
+        view.s = Math.min((w - 2 * pad) / dx, (h - 2 * pad) / dy);
+        view.cx = (minX + maxX) / 2; view.cy = (minY + maxY) / 2;
+      }
+      function toScreen(p) { return { x: view.w / 2 + (p.x - view.cx) * view.s, y: view.h / 2 - (p.y - view.cy) * view.s }; }
+      function toWorld(sx, sy) { return { x: view.cx + (sx - view.w / 2) / view.s, y: view.cy - (sy - view.h / 2) / view.s }; }
+
+      function draw() {
+        var el = cv.value;
+        if (!el) return;
+        var dpr = window.devicePixelRatio || 1;
+        var w = el.clientWidth || 600, h = el.clientHeight || 380;
+        if (el.width !== Math.round(w * dpr) || el.height !== Math.round(h * dpr)) {
+          el.width = Math.round(w * dpr); el.height = Math.round(h * dpr);
+        }
+        view.w = w; view.h = h;
+        var g = el.getContext('2d');
+        g.setTransform(dpr, 0, 0, dpr, 0, 0);
+        g.fillStyle = '#0a0f14'; g.fillRect(0, 0, w, h);
+        var steps = [5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000];
+        var step = 1000;
+        for (var i = 0; i < steps.length; i++) { if (steps[i] * view.s >= 50) { step = steps[i]; break; } }
+        var wl = toWorld(0, 0), wr = toWorld(w, h);
+        g.strokeStyle = '#111a23'; g.lineWidth = 1; g.beginPath();
+        for (var kx = Math.floor(wl.x / step); kx <= Math.ceil(wr.x / step); kx++) {
+          var sx = toScreen({ x: kx * step, y: 0 }).x;
+          g.moveTo(sx, 0); g.lineTo(sx, h);
+        }
+        for (var ky = Math.floor(wr.y / step); ky <= Math.ceil(wr.y / step); ky++) {
+          var sy = toScreen({ x: 0, y: ky * step }).y;
+          g.moveTo(0, sy); g.lineTo(w, sy);
+        }
+        g.stroke();
+        if (S.pts.length) {
+          var poly = function (pts, color, width) {
+            if (pts.length < 2) return;
+            g.save(); g.strokeStyle = color; g.lineWidth = width;
+            g.lineJoin = 'round'; g.lineCap = 'round'; g.beginPath();
+            pts.forEach(function (p, idx) { var q = toScreen(p); if (idx === 0) g.moveTo(q.x, q.y); else g.lineTo(q.x, q.y); });
+            g.stroke(); g.restore();
+          };
+          if (plan.value) {
+            var pl = plan.value.points.map(function (p) {
+              return YPC.toLocal({ lat: S.centerLat, lng: S.centerLng }, p.lat, p.lng);
+            });
+            poly(pl, 'rgba(34,211,166,.15)', 8);
+          }
+          var path = S.pts.slice();
+          if (S.closed && path.length > 2) path = path.concat([path[0]]);
+          g.shadowColor = 'rgba(34,211,166,.5)'; g.shadowBlur = 7;
+          poly(path, '#22d3a6', 2.2);
+          g.shadowBlur = 0;
+          S.pts.forEach(function (p, idx) {
+            var q = toScreen(p);
+            g.beginPath(); g.arc(q.x, q.y, idx === 0 ? 5.5 : 3.6, 0, Math.PI * 2);
+            g.fillStyle = idx === 0 ? '#f0a020' : '#0a0f14'; g.fill();
+            g.lineWidth = 2; g.strokeStyle = idx === 0 ? '#f0a020' : '#22d3a6'; g.stroke();
+          });
+        } else {
+          g.fillStyle = '#3a4a59'; g.font = '12.5px sans-serif'; g.textAlign = 'center';
+          g.fillText('点这里画路线，或点下面「载入 400m 跑道示例」', w / 2, h / 2);
+        }
+        var barPx = step * view.s;
+        g.strokeStyle = '#3a4a59'; g.lineWidth = 1.4; g.beginPath();
+        g.moveTo(12, h - 16); g.lineTo(12 + barPx, h - 16);
+        g.moveTo(12, h - 20); g.lineTo(12, h - 12);
+        g.moveTo(12 + barPx, h - 20); g.lineTo(12 + barPx, h - 12);
+        g.stroke();
+        g.fillStyle = '#7d8b99'; g.font = '9.5px sans-serif'; g.textAlign = 'left';
+        g.fillText(step >= 1000 ? (step / 1000) + ' km' : step + ' m', 14, h - 22);
+        g.textAlign = 'right';
+        g.fillText(S.pts.length ? fmtM(drawnLen.value) : '', w - 10, 14);
+      }
+      function scheduleDraw() {
+        if (rafId) return;
+        rafId = requestAnimationFrame(function () { rafId = 0; draw(); });
+      }
+      function refitAndDraw() { refit(); scheduleDraw(); }
+
+      function hitTest(sx, sy) {
+        for (var i = S.pts.length - 1; i >= 0; i--) {
+          var q = toScreen(S.pts[i]);
+          if (Math.hypot(q.x - sx, q.y - sy) <= 9) return i;
+        }
+        return -1;
+      }
+      function pushHistory() { history.value.push(JSON.stringify(S.pts)); if (history.value.length > 60) history.value.shift(); }
+      function onDown(e) {
+        var r = cv.value.getBoundingClientRect();
+        var sx = e.clientX - r.left, sy = e.clientY - r.top;
+        var hit = hitTest(sx, sy);
+        pushHistory();
+        if (hit >= 0) { drag = hit; return; }
+        S.pts.push(toWorld(sx, sy));
+        scheduleDraw();
+      }
+      function onMove(e) {
+        if (drag < 0) return;
+        var r = cv.value.getBoundingClientRect();
+        var p = toWorld(e.clientX - r.left, e.clientY - r.top);
+        S.pts[drag] = { x: p.x, y: p.y };
+        scheduleDraw();
+      }
+      function onUp() { if (drag >= 0) { drag = -1; refit(); scheduleDraw(); } }
+      function removePoint(sx, sy) {
+        var hit = hitTest(sx, sy);
+        if (hit < 0) return;
+        pushHistory(); S.pts.splice(hit, 1); refit(); scheduleDraw();
+      }
+      function onDbl(e) { var r = cv.value.getBoundingClientRect(); removePoint(e.clientX - r.left, e.clientY - r.top); }
+      function onRight(e) { var r = cv.value.getBoundingClientRect(); removePoint(e.clientX - r.left, e.clientY - r.top); }
+      function undo() { if (!history.value.length) return; S.pts = JSON.parse(history.value.pop()); refit(); scheduleDraw(); }
+      function clearRoute() { pushHistory(); S.pts = []; refitAndDraw(); }
+      function smoothRoute() {
+        if (S.pts.length < 3) return toast('至少 3 个点');
+        pushHistory();
+        var c = { lat: S.centerLat, lng: S.centerLng };
+        var pts = S.pts.map(function (p) { return YPC.offset(c.lat, c.lng, p.x, p.y); });
+        var sm = YPC.chaikin(pts, S.closed ? 3 : 2, S.closed);
+        S.pts = sm.map(function (p) { return YPC.toLocal(c, p.lat, p.lng); });
+        refitAndDraw();
+      }
+      function toggleClosed() { S.closed = !S.closed; scheduleDraw(); }
+
+      function applyCenter() {
+        var raw = String(ui.centerText || '').replace(/[，、;]/g, ',').trim();
+        var parts = raw.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+        if (parts.length < 2) return toast('格式：纬度, 经度');
+        var la = parseFloat(parts[0]), ln = parseFloat(parts[1]);
+        if (!isFinite(la) || !isFinite(ln) || Math.abs(la) > 90 || Math.abs(ln) > 180) return toast('坐标不合法');
+        var w = YPC.toWgs84(la, ln, ui.coordSys);
+        var shift = YPC.haversine({ lat: la, lng: ln }, w);
+        S.centerLat = +w.lat.toFixed(6); S.centerLng = +w.lng.toFixed(6);
+        refitAndDraw();
+        toast('中心点 → ' + w.lat.toFixed(6) + ', ' + w.lng.toFixed(6) + (shift > 1 ? ('（修正 ' + shift.toFixed(0) + ' m）') : ''));
+      }
+
+      function usePreset(kind) {
+        pushHistory();
+        var c = { lat: S.centerLat, lng: S.centerLng }, target = S.targetKm * 1000;
+        var rng = YPC.makeRng(S.seed + Math.floor(Math.random() * 1000));
+        var gp;
+        if (kind === 'track') gp = YPC.presetTrack(c);
+        else if (kind === 'round') gp = YPC.presetRound(c, target);
+        else if (kind === 'square') gp = YPC.presetSquare(c, target);
+        else if (kind === 'fig8') gp = YPC.presetFigure8(c, target);
+        else if (kind === 'outback') gp = YPC.presetOutBack(c, target);
+        else gp = YPC.presetRandomLoop(rng, c, target);
+        S.pts = gp.map(function (p) { return YPC.toLocal(c, p.lat, p.lng); });
+        refitAndDraw();
+        toast('已套用：' + fmtM(YPC.polylineLength(gp, false)));
+      }
+      function loadDemo() {
+        pushHistory();
+        var c = { lat: S.centerLat, lng: S.centerLng };
+        S.pts = YPC.presetTrack(c).map(function (p) { return YPC.toLocal(c, p.lat, p.lng); });
+        S.mode = 'loop'; S.lapM = 400; S.targetKm = 2.0;
+        refitAndDraw();
+        toast('已载入 400m 标准跑道（2 km = 5 圈）');
+      }
+      function bake() {
+        if (!plan.value) return toast('先画路线');
+        pushHistory();
+        S.pts = plan.value.points.map(function (p) { return YPC.toLocal({ lat: S.centerLat, lng: S.centerLng }, p.lat, p.lng); });
+        S.mode = 'exact';
+        refitAndDraw();
+        toast('已缩放到 ' + fmtM(plan.value.dist));
+      }
+
+      function copyText(t) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(t).then(function () { toast('已复制'); }, function () { fallbackCopy(t); });
+        } else fallbackCopy(t);
+      }
+      function fallbackCopy(t) {
+        var ta = document.createElement('textarea');
+        ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); toast('已复制'); } catch (e) { toast('复制失败'); }
+        document.body.removeChild(ta);
+      }
+      function copyShare() { if (!shareCode.value) return toast('先生成计划'); copyText(shareCode.value); }
+      function copyLink() { if (!shareCode.value) return toast('先生成计划'); copyText(location.href.split('#')[0] + '#r=' + shareCode.value); }
+      function download(name, text, mime) {
+        try {
+          var blob = new Blob([text], { type: mime || 'application/octet-stream' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url; a.download = name;
+          document.body.appendChild(a); a.click();
+          setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1500);
+          toast('已导出 ' + name);
+        } catch (e) { toast('导出失败：' + e.message); }
+      }
+      function exportGPX() { if (plan.value) download('route.gpx', YPC.toGPX(plan.value.points, 'campus-route'), 'application/gpx+xml'); }
+      function exportRoute() {
+        if (!plan.value) return;
+        download('route.json', JSON.stringify({
+          schema: 'campus-run-route/1',
+          center: { lat: S.centerLat, lng: S.centerLng },
+          closed: S.closed, shareCode: shareCode.value, lapM: S.lapM,
+          points: plan.value.points.map(function (p) { return { lat: +p.lat.toFixed(6), lng: +p.lng.toFixed(6) }; })
+        }, null, 2), 'application/json');
+      }
+      function exportCSV() {
+        if (!splits.value.length) return toast('先生成计划');
+        var head = 'lap,dist_m,pace_s_per_km,sec,cum_sec' + String.fromCharCode(10);
+        var body = splits.value.map(function (s) {
+          return [s.i, s.dist.toFixed(1), Math.round(s.pace), Math.round(s.sec), Math.round(s.cum)].join(',');
+        }).join(String.fromCharCode(10));
+        download('splits.csv', head + body, 'text/csv');
+      }
+      function exportCard() {
+        if (!splits.value.length) return toast('先生成计划');
+        var r = S.result, NL = String.fromCharCode(10), TAB = String.fromCharCode(9);
+        var lines = [];
+        lines.push('校园跑配速计划');
+        lines.push('目标 ' + fmtM(r.summary.distanceM) + '  平均配速 ' + fmtPace(r.summary.avgPaceSecPerKm) + '/km  预计 ' + fmtTime(r.summary.durationSec));
+        lines.push('策略 ' + (STRATEGY[S.strategy] ? STRATEGY[S.strategy].label : S.strategy) + '   单圈 ' + S.lapM + ' m   共 ' + splits.value.length + ' 段');
+        if (shareCode.value) lines.push('路线分享码 ' + shareCode.value);
+        lines.push('');
+        lines.push(['段', '距离', '该段配速', '该段用时', '累计'].join(TAB));
+        splits.value.forEach(function (s) {
+          lines.push([s.i, s.dist.toFixed(0) + 'm', fmtPace(s.pace), fmtTime(s.sec), fmtTime(s.cum)].join(TAB));
+        });
+        lines.push('');
+        lines.push('要点：第 1 段别冲，按表跑；最后一段允许快 5-10 秒；呼吸乱了就降 10 秒配速。');
+        download('配速卡.txt', lines.join(NL), 'text/plain');
+      }
+
+      function noSlash(u) { u = String(u || ''); while (u.length && u.charAt(u.length - 1) === '/') u = u.slice(0, -1); return u; }
+      function buildPrompt() {
+        var km = (plan.value ? plan.value.dist : S.targetKm * 1000) / 1000;
+        return '为一次 ' + km.toFixed(2) + ' km、目标平均配速 ' + fmtPace(S.paceSec) + '/km、策略「' +
+          (STRATEGY[S.strategy] ? STRATEGY[S.strategy].label : S.strategy) + '」的跑步，给出配速倍率曲线。' + String.fromCharCode(10) +
+          '用 [[进度0~1, 倍率], ...] 表示，进度严格递增，3-8 个点，倍率 0.90-1.12。' + String.fromCharCode(10) +
+          '只输出 JSON：{"pace":[[0,0.95],[0.5,1.0],[1,1.05]],"note":"一句中文建议"}';
+      }
+      function parseAiJson(t) {
+        t = String(t || '').trim();
+        var a = t.indexOf('{'), b = t.lastIndexOf('}');
+        if (a < 0 || b <= a) throw new Error('AI 没返回 JSON');
+        return JSON.parse(t.slice(a, b + 1));
+      }
+      async function askAI() {
+        if (!S.aiKey) throw new Error('没填 Key');
+        var r = await fetch(noSlash(S.bridge) + '/ai', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            key: S.aiKey, model: S.aiModel, baseUrl: S.aiBase,
+            messages: [
+              { role: 'system', content: '你是跑步配速分析师。只输出严格 JSON。' },
+              { role: 'user', content: buildPrompt() }
+            ]
+          })
+        });
+        if (!r.ok) throw new Error('桥返回 HTTP ' + r.status);
+        var j = await r.json();
+        return YPC.validateCadenceProfile(parseAiJson(j.content));
+      }
+
+      async function generate() {
+        if (ui.busy) return;
+        if (!plan.value) return toast('先画路线');
+        ui.busy = true;
+        try {
+          var prof = null;
+          if (S.aiOn) {
+            try { prof = await askAI(); }
+            catch (e) { toast('AI 未生效：' + e.message + '（已回退本地）'); }
+          }
+          var st = STRATEGY[S.strategy] || STRATEGY.steady;
+          S.result = YPC.simulate({
+            routePoints: plan.value.points,
+            targetPaceSecPerKm: S.paceSec,
+            cadenceBase: S.cadenceBase,
+            seed: S.seed, gpsNoiseM: S.gpsNoise, hillsM: S.hills,
+            warmupSec: st.warmupSec, driftPct: st.driftPct, kickPct: st.kickPct,
+            aiProfile: prof, startTimeIso: new Date().toISOString()
+          });
+          shareCode.value = YPC.encodeShare(plan.value.points, S.closed);
+          await Vue.nextTick();
+          drawChart();
+          toast('计划已生成：' + splits.value.length + ' 段');
+        } catch (e) { toast('生成失败：' + e.message); }
+        finally { ui.busy = false; }
+      }
+
+      function drawChart() {
+        var c = cp.value;
+        if (!c || !S.result) return;
+        var vals = S.result.points.map(function (p) { return p.speedMps; });
+        var dpr = window.devicePixelRatio || 1;
+        var w = c.clientWidth || 340, h = c.clientHeight || 84;
+        c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+        var g = c.getContext('2d');
+        g.setTransform(dpr, 0, 0, dpr, 0, 0);
+        g.clearRect(0, 0, w, h);
+        var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+        if (max - min < 0.2) { max += 0.1; min -= 0.1; }
+        var pad = 8, top = 10;
+        var X = function (i) { return pad + (i / Math.max(1, vals.length - 1)) * (w - pad * 2); };
+        var Y = function (v) { return top + (1 - (v - min) / (max - min)) * (h - top - 14); };
+        var grad = g.createLinearGradient(0, top, 0, h - 12);
+        grad.addColorStop(0, '#22d3a655'); grad.addColorStop(1, '#22d3a600');
+        g.beginPath();
+        vals.forEach(function (v, i) { if (i === 0) g.moveTo(X(i), Y(v)); else g.lineTo(X(i), Y(v)); });
+        g.lineTo(X(vals.length - 1), h - 12); g.lineTo(X(0), h - 12); g.closePath();
+        g.fillStyle = grad; g.fill();
+        g.beginPath();
+        vals.forEach(function (v, i) { if (i === 0) g.moveTo(X(i), Y(v)); else g.lineTo(X(i), Y(v)); });
+        g.strokeStyle = '#22d3a6'; g.lineWidth = 1.6; g.stroke();
+        g.fillStyle = '#7d8b99'; g.font = '9px sans-serif';
+        g.textAlign = 'left'; g.fillText(max.toFixed(2) + ' m/s', pad, 9);
+        g.textAlign = 'right'; g.fillText(min.toFixed(2) + ' m/s', w - pad, 9);
+      }
+
+      Vue.onMounted(function () {
+        Vue.nextTick(function () {
+          refit(); draw();
+          if (!S.pts.length) loadDemo();
+        });
+        window.addEventListener('resize', function () { refit(); draw(); drawChart(); });
+        if (location.hash && location.hash.indexOf('r=') >= 0) {
+          try {
+            var r0 = YPC.decodeShare(location.hash.slice(location.hash.indexOf('r=') + 2).split('&')[0]);
+            var c0 = YPC.centroid(r0.points);
+            S.centerLat = +c0.lat.toFixed(5); S.centerLng = +c0.lng.toFixed(5);
+            S.pts = r0.points.map(function (p) { return YPC.toLocal(c0, p.lat, p.lng); });
+            S.closed = !!r0.closed;
+            refit(); draw();
+            toast('已从链接加载路线');
+          } catch (e) { toast('链接路线解析失败：' + e.message); }
+        }
+      });
+      Vue.watch(function () { return [S.pts.length, S.closed, S.mode, S.lapM]; }, function () { scheduleDraw(); });
+
+      return {
+        S: S, ui: ui, history: history, shareCode: shareCode, cv: cv, cp: cp,
+        plan: plan, drawnLen: drawnLen, estDuration: estDuration, lapCount: lapCount,
+        splits: splits, passedCount: passedCount,
+        fmtM: fmtM, fmtTime: fmtTime, fmtPace: fmtPace,
+        onDown: onDown, onMove: onMove, onUp: onUp, onDbl: onDbl, onRight: onRight,
+        refitAndDraw: refitAndDraw, undo: undo, clearRoute: clearRoute, smoothRoute: smoothRoute,
+        toggleClosed: toggleClosed, usePreset: usePreset, loadDemo: loadDemo, bake: bake,
+        applyCenter: applyCenter, generate: generate,
+        copyShare: copyShare, copyLink: copyLink,
+        exportGPX: exportGPX, exportRoute: exportRoute, exportCSV: exportCSV, exportCard: exportCard
+      };
+    }
+  }).mount('#app');
+})();
+</script>
+</body>
+</html>

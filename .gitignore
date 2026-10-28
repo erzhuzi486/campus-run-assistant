@@ -1,0 +1,41 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ---- 运行时产物 ----
+*.csv
+*.log
+run_stream.csv
+rs_feed.csv
+preview.png
+
+# ---- 备份 / 派生文件 ----
+*.bak
+*.bak-*
+*.orig
+
+# ---- 图标派生物（仓库只保留正式版 app.ico）----
+app_bmp.ico
+app_run.ico
+icon_*.png
+
+# ---- 编辑器 / 系统 ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- 模拟器本体（体积数十 GB，且为第三方商业软件，绝不入库）----
+LDPlayer*/
+leidian/
+雷电模拟器/
+ldplayer9box/
+*.vmdk
+*.vdi
+*.vdi.bak
+*.ova
+ldinst_*.exe
