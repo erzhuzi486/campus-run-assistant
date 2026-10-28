@@ -581,5 +581,12 @@ class App:
 
 if __name__ == "__main__":
     root = tk.Tk()
+    # 窗口图标：优先用同目录的 app.ico，缺了也不影响运行
+    try:
+        _ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app.ico")
+        if os.path.exists(_ico):
+            root.iconbitmap(default=_ico)
+    except Exception:
+        pass
     App(root)
     root.mainloop()

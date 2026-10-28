@@ -141,6 +141,14 @@ python doctor.py
 一键刷跑.vbs
 ```
 
+**顺手建个桌面快捷方式**（这样桌面图标和作者一致，双击直达、无黑框）：
+
+```bat
+python install_shortcut.py
+```
+
+脚本会自动找 `pythonw.exe`，把快捷方式的图标指向仓库里的 `app.ico`。不给 `--out` 就建到桌面。
+
 ---
 
 ## 七、失败处理
