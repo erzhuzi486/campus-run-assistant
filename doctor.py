@@ -29,6 +29,10 @@ REQUIRED_APPS = {
     "com.fixcam.v2": "相机修复版（摄像头能用的关键）",
     "com.fix.cam": "CamProbe（相机链路诊断）",
 }
+# 业务 App：不在仓库里（体积 124 MB 超过 GitHub 单文件限制），需要自行获取
+OPTIONAL_APPS = {
+    "com.joyrunworld.app": "悦跑世界（校园跑平台 App）",
+}
 
 OK, WARN, BAD = "✓", "!", "✗"
 rows = []
@@ -214,6 +218,15 @@ def check_adb(ldc_root):
         else:
             add(BAD, f"缺 {pkg}", desc,
                 f'adb -s {serial} install -r apks/{pkg.replace(".", "_")}.apk')
+
+    # 业务 App：装了才真正能跑，但不强制（不同学校平台可能不同）
+    for pkg, desc in OPTIONAL_APPS.items():
+        if pkg in installed:
+            add(OK, f"已装 {pkg}", desc)
+        else:
+            add(WARN, f"未装 {pkg}", desc + " —— 工具本身能用，但模拟器里没东西可跑",
+                "获取方式见 环境复刻.md「安装悦跑世界」，装好再执行 "
+                f"adb -s {serial} install -r <apk路径>")
 
 
 def main():

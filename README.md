@@ -136,6 +136,9 @@ python doctor.py          :: 复检，全绿即完成
 | `apks/fixcam_v2.apk` | 相机修复版，让模拟器的相机服务正确挂载（**摄像头能用的关键**） |
 | `apks/camprobe.apk` | CamProbe，相机链路诊断（可选） |
 
+> **业务 App（悦跑世界 `com.joyrunworld.app`）不在仓库里** —— APK 124 MB 超过 GitHub 单文件限制，且属第三方商业 App。
+> 获取与安装方式见 [`环境复刻.md`](环境复刻.md)「第三步之二：装悦跑世界」。
+
 ```bat
 python doctor.py            :: 先体检，看差什么
 python apply_config.py      :: 对齐实例参数（需先关闭雷电）

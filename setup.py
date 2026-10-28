@@ -102,6 +102,8 @@ def main():
     print(f"    ② 执行：\"{os.path.join(root, 'adb.exe')}\" devices   :: 要看到一台 device")
     print(f"    ③ 执行：\"{os.path.join(root, 'adb.exe')}\" -s emulator-5554 install -r apks\\fixcam_v2.apk")
     print(f"    ④ 执行：\"{os.path.join(root, 'adb.exe')}\" -s emulator-5554 install -r apks\\camprobe.apk")
+    print("    ⑤ 业务 App（悦跑世界 com.joyrunworld.app）不在仓库里（124MB 超 GitHub 限制），")
+    print("       获取与安装方式见 环境复刻.md「第三步之二：装悦跑世界」")
 
     # 5. 复检
     print("\n[3/3] 复检")

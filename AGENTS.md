@@ -103,6 +103,18 @@ python apply_config.py              :: 确认后写入
 
 设备号不是 `emulator-5554` 时，用 `adb devices` 输出里的实际值替换。
 
+**还要装业务 App（悦跑世界 `com.joyrunworld.app`）** —— 否则工具能用，但模拟器里没有可跑的对象。
+
+它**不在仓库里**：APK 有 124 MB，超过 GitHub 单文件 100 MB 限制，且属于第三方商业 App。获取途径写在 `环境复刻.md`「第三步之二：装悦跑世界」里（学校渠道 / 从手机提取 / 从其他模拟器备份）。
+
+装好后验证：
+
+```bat
+<雷电目录>\adb.exe -s emulator-5554 shell pm list packages | findstr joyrun
+```
+
+用户用的是别的校园跑平台时，把包名换掉即可，原理一致。
+
 ---
 
 ## 五、摄像头设置（唯一必须人工的一步）
