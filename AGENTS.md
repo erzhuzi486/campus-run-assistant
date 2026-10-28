@@ -105,7 +105,25 @@ python apply_config.py              :: 确认后写入
 
 **还要装业务 App（悦跑世界 `com.joyrunworld.app`）** —— 否则工具能用，但模拟器里没有可跑的对象。
 
-它**不在仓库里**：APK 有 124 MB，超过 GitHub 单文件 100 MB 限制，且属于第三方商业 App。获取途径写在 `环境复刻.md`「第三步之二：装悦跑世界」里（学校渠道 / 从手机提取 / 从其他模拟器备份）。
+APK 有 124 MB，超过 GitHub **仓库**单文件 100 MB 限制，所以它不在源码目录里，而是放在本仓库的 **Releases**（Release 资产上限 2 GB）。直接下载：
+
+```bat
+curl -L -o joyrun_v1.1.23.apk https://github.com/erzhuzi486/campus-run-assistant/releases/download/apk-v1.1.23/joyrun_v1.1.23.apk
+```
+
+没有 curl 就用 PowerShell：
+
+```bat
+powershell -NoProfile -Command "Invoke-WebRequest -Uri 'https://github.com/erzhuzi486/campus-run-assistant/releases/download/apk-v1.1.23/joyrun_v1.1.23.apk' -OutFile 'joyrun_v1.1.23.apk'"
+```
+
+装进模拟器：
+
+```bat
+<雷电目录>\adb.exe -s emulator-5554 install -r joyrun_v1.1.23.apk
+```
+
+如果用户手头已有 APK（学校渠道 / 从手机提取），优先用他给的，别重复下载。
 
 装好后验证：
 

@@ -225,8 +225,9 @@ def check_adb(ldc_root):
             add(OK, f"已装 {pkg}", desc)
         else:
             add(WARN, f"未装 {pkg}", desc + " —— 工具本身能用，但模拟器里没东西可跑",
-                "获取方式见 环境复刻.md「安装悦跑世界」，装好再执行 "
-                f"adb -s {serial} install -r <apk路径>")
+                "从 Releases 下载：https://github.com/erzhuzi486/campus-run-assistant/"
+                "releases/download/apk-v1.1.23/joyrun_v1.1.23.apk ，再 "
+                f"adb -s {serial} install -r joyrun_v1.1.23.apk")
 
 
 def main():
