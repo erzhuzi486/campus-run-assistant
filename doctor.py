@@ -48,10 +48,8 @@ def find_ldplayer():
     env = os.environ.get("LDCONSOLE", "").strip('"')
     if env:
         cands.append(env)
-    for d in (r"D:\leidian\LDPlayer9", r"D:\leidian\LDPlayer14",
-              r"D:\LDPlayer\LDPlayer9", r"D:\LDPlayer\LDPlayer14",
-              r"D:\雷电模拟器\leidian\LDPlayer9", r"D:\雷电模拟器\leidian\LDPlayer14",
-              r"C:\LDPlayer\LDPlayer9", r"C:\LDPlayer\LDPlayer14",
+    for d in (r"D:\leidian\LDPlayer9", r"D:\LDPlayer\LDPlayer9",
+              r"D:\雷电模拟器\leidian\LDPlayer9", r"C:\LDPlayer\LDPlayer9",
               r"C:\Program Files\LDPlayer\LDPlayer9"):
         cands.append(os.path.join(d, "ldconsole.exe"))
     for drive in "CDEFG":
@@ -61,7 +59,8 @@ def find_ldplayer():
         for pat in ("*/ldconsole.exe", "*/*/ldconsole.exe", "*/*/*/ldconsole.exe"):
             cands.extend(glob.glob(os.path.join(root, pat)))
     for c in cands:
-        if c and os.path.isfile(c):
+        # 雷电 14 的相机模块不可用，扫到也不接管
+        if c and os.path.isfile(c) and "ldplayer14" not in c.replace("\\", "/").lower():
             return c
     return None
 
@@ -114,7 +113,7 @@ def check_instance(root, ldc):
     code, out = run([ldc, "list2"])
     if code != 0:
         add(WARN, "实例列表", "ldconsole list2 调用失败", "确认雷电已安装完整")
-        return
+        return False
 
     # list2 列序：index,title,topHwnd,bindHwnd,isRunning,pid,vboxPid,width,height,dpi
     insts = []
@@ -125,10 +124,11 @@ def check_instance(root, ldc):
 
     if not insts:
         add(BAD, "实例列表", "一个实例都没有", "打开雷电，新建一个模拟器实例")
-        return
+        return False
 
     p = insts[0]
-    add(OK, "实例", f"{p[1]}（{'运行中' if p[4] == '1' else '未启动'}）")
+    running = p[4] == "1"
+    add(OK, "实例", f"{p[1]}（{'运行中' if running else '未启动'}）")
 
     # 分辨率直接看 list2，最实时
     w, h, dpi = p[7], p[8], p[9]
@@ -144,14 +144,14 @@ def check_instance(root, ldc):
             if os.path.basename(f) != "leidians.config"]
     if not cfgs:
         add(WARN, "实例配置", "vms\\config 下没有实例配置", "先启动一次模拟器让它生成")
-        return
+        return running
 
     cfg_path = cfgs[0]
     try:
         cfg = json.load(open(cfg_path, encoding="utf-8"))
     except Exception as e:
         add(WARN, "实例配置", f"解析 {os.path.basename(cfg_path)} 失败：{e}")
-        return
+        return running
 
     cpu = cfg.get("advancedSettings.cpuCount")
     mem = cfg.get("advancedSettings.memorySize")
@@ -177,6 +177,8 @@ def check_instance(root, ldc):
     else:
         add(WARN, "帧率", f"当前 {fps} fps，目标 {TARGET['fps']} fps（影响 ldcam 稳定性）",
             "python apply_config.py")
+
+    return running
 
 
 def check_camera():
@@ -238,8 +240,13 @@ def main():
 
     root, ldc = check_ldplayer()
     if root and ldc:
-        check_instance(root, ldc)
-        check_adb(root)
+        running = check_instance(root, ldc)
+        if running:
+            check_adb(root)
+        else:
+            # 雷电 9 没起来时，5554 端口可能被雷电 14 占着，不能拿来判断
+            add(WARN, "ADB 检查", "雷电 9 未启动，跳过",
+                "用桌面图标启动雷电 9，再重跑 python doctor.py")
     check_camera()
 
     width = max(len(r[1]) for r in rows) + 2

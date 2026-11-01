@@ -26,10 +26,10 @@ TARGET = {
 }
 
 SEARCH_DIRS = [
-    r"D:\leidian\LDPlayer9", r"D:\leidian\LDPlayer14",
-    r"D:\LDPlayer\LDPlayer9", r"D:\LDPlayer\LDPlayer14",
-    r"D:\雷电模拟器\leidian\LDPlayer9", r"D:\雷电模拟器\leidian\LDPlayer14",
-    r"C:\LDPlayer\LDPlayer9", r"C:\LDPlayer\LDPlayer14",
+    r"D:\leidian\LDPlayer9",
+    r"D:\LDPlayer\LDPlayer9",
+    r"D:\雷电模拟器\leidian\LDPlayer9",
+    r"C:\LDPlayer\LDPlayer9",
     r"C:\Program Files\LDPlayer\LDPlayer9",
 ]
 
@@ -46,7 +46,8 @@ def find_root():
         if not os.path.exists(root):
             continue
         for pat in ("*/ldconsole.exe", "*/*/ldconsole.exe", "*/*/*/ldconsole.exe"):
-            hits = glob.glob(os.path.join(root, pat))
+            hits = [h for h in glob.glob(os.path.join(root, pat))
+                    if "ldplayer14" not in h.replace("\\", "/").lower()]
             if hits:
                 return os.path.dirname(hits[0])
     return None

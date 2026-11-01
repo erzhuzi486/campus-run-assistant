@@ -25,16 +25,20 @@ except Exception:
 LDCONSOLE_ENV = "LDCONSOLE"          # 手动指定：set LDCONSOLE=D:\xxx\ldconsole.exe
 SEARCH_DIRS = [
     r"D:\leidian\LDPlayer9",
-    r"D:\leidian\LDPlayer14",
     r"D:\LDPlayer\LDPlayer9",
-    r"D:\LDPlayer\LDPlayer14",
     r"D:\雷电模拟器\leidian\LDPlayer9",
-    r"D:\雷电模拟器\leidian\LDPlayer14",
     r"C:\LDPlayer\LDPlayer9",
-    r"C:\LDPlayer\LDPlayer14",
     r"C:\Program Files\LDPlayer\LDPlayer9",
-    r"C:\Program Files\LDPlayer\LDPlayer14",
 ]
+
+# 雷电 14 的相机模块不可用（ldcam 不送帧），明确排除，避免误接管。
+# 即使盘符扫描扫到了也一律跳过。
+EXCLUDE_KEYWORDS = ("ldplayer14",)
+
+
+def _is_excluded(path):
+    low = path.replace("\\", "/").lower()
+    return any(k in low for k in EXCLUDE_KEYWORDS)
 
 
 def _scan_drives():
@@ -71,7 +75,7 @@ def _candidates():
         if c and c not in seen:
             seen.add(c)
             out.append(c)
-    return out
+    return [c for c in out if not _is_excluded(c)]
 
 
 def _pick_ldconsole():

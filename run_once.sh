@@ -13,13 +13,9 @@ CSV="${TMPDIR:-/tmp}/run_stream.csv"
 CANDIDATES=(
   "${LDCONSOLE:-}"
   "/d/leidian/LDPlayer9/ldconsole.exe"
-  "/d/leidian/LDPlayer14/ldconsole.exe"
   "/d/LDPlayer/LDPlayer9/ldconsole.exe"
-  "/d/LDPlayer/LDPlayer14/ldconsole.exe"
   "/c/LDPlayer/LDPlayer9/ldconsole.exe"
-  "/c/LDPlayer/LDPlayer14/ldconsole.exe"
   "/d/雷电模拟器/leidian/LDPlayer9/ldconsole.exe"
-  "/d/雷电模拟器/leidian/LDPlayer14/ldconsole.exe"
 )
 
 LD=""

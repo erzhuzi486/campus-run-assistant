@@ -34,13 +34,9 @@ SERIAL = os.environ.get("SERIAL", "emulator-5554")
 
 LD_SEARCH = [
     r"D:\leidian\LDPlayer9",
-    r"D:\leidian\LDPlayer14",
     r"D:\LDPlayer\LDPlayer9",
-    r"D:\LDPlayer\LDPlayer14",
     r"C:\LDPlayer\LDPlayer9",
-    r"C:\LDPlayer\LDPlayer14",
     r"D:\雷电模拟器\leidian\LDPlayer9",
-    r"D:\雷电模拟器\leidian\LDPlayer14",
 ]
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
