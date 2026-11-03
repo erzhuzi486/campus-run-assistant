@@ -7,6 +7,7 @@
 import math
 import os
 import queue
+import random
 import shutil
 import subprocess
 import threading
@@ -152,8 +153,48 @@ def to_geo(u, v):
     return CENTER_LAT + u / 111320.0, CENTER_LNG + v / KF
 
 
+# ---------------- 轨迹随机化 ----------------
+# 真实 GPS 每次都有 1~3 m 漂移，站的位置也不会分毫不差。
+# 不做随机化的话，两次跑步的经纬度序列完全相同，服务端一比就是脚本生成。
+_RNG = random.Random()          # 每次启动取新随机源
+
+
+def _gps_noise(lat, lng, meters=1.5):
+    """叠加 ±meters 米随机漂移"""
+    dn = _RNG.uniform(-meters, meters)
+    de = _RNG.uniform(-meters, meters)
+    return (lat + dn / 111320.0,
+            lng + de / (111320.0 * math.cos(math.radians(lat))))
+
+
+# 每次站的位置略有不同：整条轨迹平移 ±9 米
+_LAT0, _LNG0 = _gps_noise(CENTER_LAT, CENTER_LNG, 9.0)
+
 N_PTS = int(round(TOTAL_M / SPEED * HZ))
-ROUTE = [(i * SPEED / HZ,) + to_geo(*route_point(i * SPEED / HZ)) for i in range(N_PTS)]
+
+
+def _build_route():
+    """等间距采样 + 配速波动 + 逐点噪声，总长归一化到 TOTAL_M"""
+    raw, acc = [], 0.0
+    for i in range(N_PTS):
+        prog = i / max(1, N_PTS - 1)
+        factor = 0.94 + 0.12 * prog          # 起步慢 6%，末段快 6%
+        acc += SPEED * factor / HZ
+        raw.append(acc)
+    scale = TOTAL_M / raw[-1] if raw[-1] else 1.0
+
+    pts = []
+    for i in range(N_PTS):
+        d = raw[i] * scale
+        u, v = route_point(d)
+        lat = _LAT0 + u / 111320.0
+        lng = _LNG0 + v / KF
+        lat, lng = _gps_noise(lat, lng, 1.5)
+        pts.append((d, lat, lng))
+    return pts
+
+
+ROUTE = _build_route()
 START_LAT, START_LNG = ROUTE[0][1], ROUTE[0][2]
 
 
@@ -483,7 +524,8 @@ class App:
         else:
             idx = self.frozen_idx
         self.map.draw_dynamic(idx)
-        dist = min(TOTAL_M, idx * SPEED)
+        di = int(min(idx, len(ROUTE) - 1))
+        dist = min(TOTAL_M, ROUTE[di][0])
         self.v_dist.set("%.0f" % dist)
         sec = int(idx * SPEED / SPEED)
         self.v_time.set("%02d:%02d" % (sec // 60, sec % 60))
