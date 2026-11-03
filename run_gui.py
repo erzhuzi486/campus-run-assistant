@@ -127,6 +127,8 @@ H = STRAIGHT / 2.0
 PER = 4 * H + 2 * math.pi * LANE_R
 TOTAL_M = PER * LAPS
 SPEED = 1000.0 / PACE_SEC
+CADENCE_BASE = 168            # 步/分钟，5'30" 配速下的自然步频
+STRIDE_MIN, STRIDE_MAX = 0.40, 1.85   # 步幅合理区间（米）
 KF = 111320.0 * math.cos(math.radians(CENTER_LAT))
 
 
@@ -401,12 +403,20 @@ class App:
         self.v_dist = tk.StringVar(value="0")
         self.v_time = tk.StringVar(value="00:00")
         self.v_pace = tk.StringVar(value="--'--\"")
-        for i, (t, var, unit) in enumerate([("距离", self.v_dist, "m"),
-                                           ("用时", self.v_time, ""),
-                                           ("配速", self.v_pace, "/km")]):
+        self.v_cad = tk.StringVar(value="--")
+        self.v_steps = tk.StringVar(value="0")
+        self.v_stride = tk.StringVar(value="--")
+        metrics = [("距离", self.v_dist, "m"),
+                   ("用时", self.v_time, ""),
+                   ("配速", self.v_pace, "/km"),
+                   ("步频", self.v_cad, "spm"),
+                   ("步数", self.v_steps, "步"),
+                   ("步幅", self.v_stride, "m")]
+        for i, (t, var, unit) in enumerate(metrics):
+            r, col = divmod(i, 3)
             c = tk.Frame(cards, bg=CARD)
-            c.grid(row=0, column=i, padx=(0, 8), sticky="nsew")
-            cards.columnconfigure(i, weight=1)
+            c.grid(row=r, column=col, padx=(0, 8), pady=(0, 6), sticky="nsew")
+            cards.columnconfigure(col, weight=1)
             tk.Label(c, text=t, bg=CARD, fg=MUTED, font=("Microsoft YaHei", 9)).pack(anchor="w", padx=12, pady=(10, 0))
             row = tk.Frame(c, bg=CARD)
             row.pack(anchor="w", padx=12)
@@ -479,6 +489,21 @@ class App:
         self.v_time.set("%02d:%02d" % (sec // 60, sec % 60))
         if dist > 25:
             self.v_pace.set("%d'%02d\"" % (PACE_SEC // 60, PACE_SEC % 60))
+
+        # 步频 / 步数 / 步幅：由速度反推，叠加轻微起伏避免成为死板常数
+        if dist < 1:
+            self.v_cad.set("--")
+            self.v_steps.set("0")
+            self.v_stride.set("--")
+        else:
+            v = SPEED
+            cad = CADENCE_BASE + 3.2 * math.sin(idx / 6.5) + 1.8 * math.sin(idx / 2.3)
+            stride = v / (cad / 60.0)
+            stride = max(STRIDE_MIN, min(STRIDE_MAX, stride))
+            cad = v / (stride / 60.0)
+            self.v_cad.set("%.0f" % cad)
+            self.v_steps.set("%d" % int(dist / stride))
+            self.v_stride.set("%.2f" % stride)
         lap = min(LAPS, int(dist / PER) + (1 if dist < TOTAL_M - 0.5 else 0))
         self.lbl_lap.config(text="第 %d / %d 圈" % (lap, LAPS))
         self.bar_fg.place_configure(relwidth=min(1.0, idx / max(1, len(ROUTE) - 1)))
